@@ -348,7 +348,6 @@ class CGMPredictor(nn.Module):
             )
             
             
-        out = self.layernorm(cls)
         out = self.head(cls)
         
 
