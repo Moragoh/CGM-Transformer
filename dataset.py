@@ -53,13 +53,13 @@ def interpolate_random_samples(cgm, cgm_time, max_len):
     
 
 class CGMDataset(Dataset):
-    def __init__(self, file, max_len=2048, split="train", pred_time=60, seed=42, augment=True, max_deviation=45, max_range=1.5):
+    def __init__(self, file, max_len=2048, pred_time=60, seed=42, augment=True, max_gap=45, min_gap=0, max_range=1.5):
         self.max_len = max_len
-        self.split = split
         self.augment = augment
         self.pred_time = pred_time // 5
         self.data = []
-        self.max_deviation = max_deviation
+        self.min_gap = min_gap
+        self.max_gap = max_gap
         self.max_range = max_range
 
         # Load and process data
@@ -74,15 +74,6 @@ class CGMDataset(Dataset):
                         "bolus": user_data['data_type=bolus']
                     })
 
-        # Set seed for reproducible shuffling
-        random.Random(seed).shuffle(self.data)
-
-        # Train/validation split
-        split_idx = int(0.8 * len(self.data))
-        if self.split == "train":
-            self.data = self.data[:split_idx]
-        else:
-            self.data = self.data[split_idx:]
 
 
     def __len__(self):
@@ -121,7 +112,7 @@ class CGMDataset(Dataset):
             input_cgm = raw_cgm.iloc[:input_window]
             
             start_time, end_time = input_cgm['datetime'].min(), input_cgm['datetime'].max()
-
+            
             
             if (end_time - start_time).total_seconds() / 300 > input_window * self.max_range:
                 continue
@@ -159,7 +150,7 @@ class CGMDataset(Dataset):
                 dtype=torch.float32
             ).clip_(min=0)
 
-            if ((cgm_time[1:] - cgm_time[:-1]) > self.max_deviation/5).sum() != 0:
+            if ((cgm_time[1:] - cgm_time[:-1]) > self.max_gap/5).sum() != 0:
                 continue
     
             if augment == True:
@@ -188,7 +179,7 @@ class CGMDataset(Dataset):
             # ---------- 6. prediction horizons ----------
             pred_time = torch.rand(self.max_len) * (self.pred_time - 1) + 1  # in 5-min units
             pred_time = torch.minimum(pred_time, target_time - cgm_time[0] - 0.05).clamp(min=0)
-    
+            
             return {
                 'cgm'        : cgm,
                 'cgm_time'   : cgm_time,
@@ -207,10 +198,7 @@ class CGMDataset(Dataset):
             }
 
 
-
-
-    @staticmethod
-    def load_all_user_data(base_path):
+    def load_all_user_data(self, base_path):
         data = defaultdict(lambda: defaultdict(dict))
         user_entries = []
     
@@ -234,31 +222,46 @@ class CGMDataset(Dataset):
                 if all(os.path.isdir(p) for p in user_dirs.values()):
                     user_entries.append((dataset_name, user_name, user_dirs))
     
-        # Step 2: Load each user's full data with tqdm
+        # Step 2: Load each user’s full data
         for dataset_name, user_name, user_dirs in tqdm(user_entries, desc="Users loaded"):
             for dtype, path in user_dirs.items():
-                parquet_files = [f for f in os.listdir(path) if f.endswith('.parquet')]
+
+                parquet_files = [f for f in os.listdir(path) if f.endswith(".parquet")]
                 dfs = []
                 for file in parquet_files:
                     try:
-                        df = pd.read_parquet(os.path.join(path, file))
-                        dfs.append(df)
+                        dfs.append(pd.read_parquet(os.path.join(path, file)))
                     except Exception as e:
                         print(f"Error reading {file} for user {user_name}: {e}")
-                if dfs:
-                    df = pd.concat(dfs, ignore_index=True)
-    
-                    # Drop NaNs from relevant columns based on dtype
-                    if dtype == 'cgm':
-                        df = df.dropna(subset=['cgm'])
-                    elif dtype == 'basal':
-                        df = df.dropna(subset=['basal_rate'])
-                    elif dtype == 'bolus':
-                        df = df.dropna(subset=['bolus'])
-    
-                    data[dataset_name][user_name][f"data_type={dtype}"] = df
-                else:
+
+                if not dfs:                                            # no files → empty frame
                     data[dataset_name][user_name][f"data_type={dtype}"] = pd.DataFrame()
+                    continue
+
+                df = pd.concat(dfs, ignore_index=True)
+                
+                if dtype == "cgm":
+                    df = df.dropna(subset=["cgm", "datetime"])
+                elif dtype == "basal":
+                    df = df.dropna(subset=["basal_rate", "datetime"])
+                elif dtype == "bolus":
+                    df = df.dropna(subset=["bolus", "datetime"])
+
+                if dtype == "cgm" and not df.empty:
+                    df = df.sort_values("datetime").reset_index(drop=True)
+
+                    keep_mask = [True]                          # always keep the first row
+                    last_dt = df.loc[0, "datetime"]
+
+                    for cur_dt in df["datetime"].iloc[1:]:
+                        if (cur_dt - last_dt).total_seconds() >= self.min_gap * 60:
+                            keep_mask.append(True)
+                            last_dt = cur_dt
+                        else:
+                            keep_mask.append(False)
+
+                    df = df.loc[keep_mask].reset_index(drop=True)
+                data[dataset_name][user_name][f"data_type={dtype}"] = df
     
         return data
 

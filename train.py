@@ -45,7 +45,7 @@ model.to(device)
 
 # Load the latest checkpoint if available
 iteration = 1
-#model.load_state_dict(torch.load(f'./model_iter_{iteration}.pth', map_location=device))
+#model.load_state_dict(torch.load(f'./results/model_iter_{iteration}.pth', map_location=device))
 #if os.listdir(save_path):
 #iteration = max(int(f.split('_')[-1][:-4]) for f in os.listdir(save_path) if f.startswith('model_iter_') and f.endswith('.pth'))
 #model.load_state_dict(torch.load(f'{save_path}/model_iter_{iteration}.pth', map_location=device))
@@ -58,12 +58,12 @@ optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-3)
 # -------------------------
 # Datasets and Loaders
 # -------------------------
-train_dataset = CGMDataset(file="./Datasets", split="train", max_len=512*10, pred_time=90, augment=True, max_deviation=99999, max_range = 1.5)
-val_dataset = CGMDataset(file="./Datasets", split="val", max_len=512*10, pred_time=90, augment=False, max_deviation=99999, max_range = 1.5)
+train_dataset = CGMDataset(file="./Datasets/Train", max_len=512*20, pred_time=90, augment=False, max_deviation=99999, max_range = 1.5)
+val_dataset = CGMDataset(file="./Datasets/Val", max_len=512*20, pred_time=90, augment=False, max_deviation=99999, max_range = 1.5)
 
 train_loader = DataLoader(
     train_dataset,
-    batch_size=4,
+    batch_size=2,
     shuffle=True,  # No need for DistributedSampler
     collate_fn=collate_fn,
     drop_last=True,
@@ -71,7 +71,7 @@ train_loader = DataLoader(
 
 val_loader = DataLoader(
     val_dataset,
-    batch_size=4,
+    batch_size=2,
     shuffle=False,  # No need for DistributedSampler
     collate_fn=collate_fn,
     drop_last=True,
