@@ -267,7 +267,6 @@ class CGMPredictor(nn.Module):
             for _ in range(n_layer)
         ])
 
-        self.layernorm = LayerNorm(n_embd, bias=False)
         self.head = nn.Linear(n_embd, 1, bias=True)
 
 
