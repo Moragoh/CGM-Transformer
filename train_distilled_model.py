@@ -41,8 +41,25 @@ teacher_model = CGMPredictor(
     n_layer=3,
     dropout=0.0,  # No dropout needed for inference
 )
-# Load your trained teacher model
-teacher_model.load_state_dict(torch.load("./results/model_iter_23000.pth", map_location=device))
+
+# Make a clean state_dict to get rid of errors caused by "residue" from previous runs
+# 1. Load the state dictionary from the file into a variable
+state_dict = torch.load("./results/model_iter_23000.pth", map_location=device)
+
+# 2. Create a new, empty dictionary to hold the cleaned keys
+from collections import OrderedDict
+new_state_dict = OrderedDict()
+
+# 3. Loop through the original state_dict and remove the "_orig_mod." prefix
+for k, v in state_dict.items():
+    if k.startswith('_orig_mod.'):
+        name = k[10:] # remove `_orig_mod.`
+        new_state_dict[name] = v
+    else:
+        new_state_dict[k] = v
+
+# 4. Load the NEW, cleaned state_dict into the model
+teacher_model.load_state_dict(new_state_dict)
 teacher_model.to(device)
 teacher_model.eval()  # IMPORTANT: Set teacher to evaluation mode. Freezes model so that it does not train anymore.
 print(f'Teacher trainable parameters: {teacher_model.num_params()}')
