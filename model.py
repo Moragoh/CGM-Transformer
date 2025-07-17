@@ -199,31 +199,31 @@ class Encoding(nn.Module):
         x: Tensor of shape (batch_size, seq_len)
         x_t: Tensor of shape (batch_size, seq_len) (relative time positions, not necessarily sorted)
         """
-        print("    ENCODING_DEBUG: ---> Entering Encoding layer.")
+        # print("    ENCODING_DEBUG: ---> Entering Encoding layer.")
         batch_size, seq_len = x_sorted.shape
 
         # Pad x and x_t by repeating the first value for the first `d-1` positions
         padded_x = torch.cat([x_sorted[:, :1].repeat(1, self.d - 1), x_sorted], dim=1)
         padded_x_t = torch.cat([x_t_sorted[:, :1].repeat(1, self.d - 1), x_t_sorted], dim=1)
-        print("    ENCODING_DEBUG: [1/5] Padding complete.")
+        # print("    ENCODING_DEBUG: [1/5] Padding complete.")
 
         # Create the sliding windows of size `d` for x and x_t
         windows_x = padded_x.unfold(dimension=1, size=self.d, step=1)
         windows_x_t = padded_x_t.unfold(dimension=1, size=self.d, step=1)
-        print("    ENCODING_DEBUG: [2/5] Unfold operation complete.")
+        # print("    ENCODING_DEBUG: [2/5] Unfold operation complete.")
 
         # Compute relative time differences
         relative_time_diff = windows_x_t - windows_x_t[:, :, -1:].expand_as(windows_x_t)
         relative_time_diff = relative_time_diff[:, :, :-1]
-        print("    ENCODING_DEBUG: [3/5] Relative time calculation complete.")
+        # print("    ENCODING_DEBUG: [3/5] Relative time calculation complete.")
 
         # Concatenate x and relative time differences
         windows = torch.cat((windows_x, relative_time_diff), dim=-1).contiguous()
-        print("    ENCODING_DEBUG: [4/5] Concatenation complete.")
+        # print("    ENCODING_DEBUG: [4/5] Concatenation complete.")
 
         # Pass the concatenated windows through the encoding layers
         out = self.encoding(windows)
-        print("    ENCODING_DEBUG: [5/5] Final MLP complete.")
+        # print("    ENCODING_DEBUG: [5/5] Final MLP complete.")
         
         return out
 
@@ -319,47 +319,47 @@ class CGMPredictor(nn.Module):
                 cgm_t, basal_t, bolus_t,
                 cls_t, pred_time=0):
     
-        print("  MODEL_DEBUG: ---> Start of forward pass.")
+        # print("  MODEL_DEBUG: ---> Start of forward pass.")
         # Normalize inputs
         inp_cgm = self.normalize_cgm(inp_cgm)
         inp_basal = self.normalize_basal(inp_basal)
         inp_bolus = self.normalize_bolus(inp_bolus)
-        print("  MODEL_DEBUG: [1/8] Normalization complete.")
+        # print("  MODEL_DEBUG: [1/8] Normalization complete.")
         
         cgm = self.cgm_embd(inp_cgm, cgm_t)
-        print("  MODEL_DEBUG: [2/8] CGM embedding complete.")
+        # print("  MODEL_DEBUG: [2/8] CGM embedding complete.")
 
         if inp_basal.size(1) > 0:
             basal = self.basal_embd(inp_basal, basal_t)
         else:
             basal = torch.empty(inp_basal.size(0), 0, cgm.shape[-1]).to(inp_cgm.device) 
-        print("  MODEL_DEBUG: [3/8] Basal embedding complete.")
+        # print("  MODEL_DEBUG: [3/8] Basal embedding complete.")
         
         if inp_bolus.size(1) > 0:
             bolus = self.bolus_embd(inp_bolus, bolus_t)
         else:
             bolus = torch.empty(inp_bolus.size(0), 0, cgm.shape[-1]).to(inp_cgm.device) 
-        print("  MODEL_DEBUG: [4/8] Bolus embedding complete.")
+        # print("  MODEL_DEBUG: [4/8] Bolus embedding complete.")
         
         B, T = cls_t.shape
         cls = torch.zeros(B, T, cgm.shape[-1]).to(inp_cgm.device)
         
         ins = torch.cat([basal, bolus], dim=1)
         ins_t = torch.cat([basal_t, bolus_t], dim=1)
-        print("  MODEL_DEBUG: [5/8] Insulin data concatenated.")
+        # print("  MODEL_DEBUG: [5/8] Insulin data concatenated.")
         
         # Pass through blocks
         for i, block in enumerate(self.blocks):
-            print(f"  MODEL_DEBUG: [6/8] Entering block {i+1}/{len(self.blocks)}.")
+            # print(f"  MODEL_DEBUG: [6/8] Entering block {i+1}/{len(self.blocks)}.")
             cls, cgm, ins = block(
                 cls, cls_t, 
                 cgm, cgm_t, 
                 ins, ins_t, 
                 pred_time
             )
-            print(f"  MODEL_DEBUG: ---> Exiting block {i+1}/{len(self.blocks)}.")
+            # print(f"  MODEL_DEBUG: ---> Exiting block {i+1}/{len(self.blocks)}.")
             
-        print("  MODEL_DEBUG: [7/8] All transformer blocks complete.")
+        # print("  MODEL_DEBUG: [7/8] All transformer blocks complete.")
             
         out = self.layernorm(cls)
         out = self.head(cls)
@@ -367,7 +367,7 @@ class CGMPredictor(nn.Module):
         # ... (rest of the forward pass) ...
         # (The residual connection part)
         
-        print("  MODEL_DEBUG: [8/8] Final layers complete.")
+        # print("  MODEL_DEBUG: [8/8] Final layers complete.")
 
         ref_time = cls_t - pred_time
         cgm_time_exp = cgm_t.unsqueeze(1)
@@ -378,7 +378,7 @@ class CGMPredictor(nn.Module):
         cgm_exp = inp_cgm.unsqueeze(1).expand(-1, idx.shape[1], -1)
         recent_cgm = cgm_exp.gather(2, idx.unsqueeze(-1)).squeeze(-1)
         out = out.squeeze(-1) + recent_cgm
-        print("  MODEL_DEBUG: ---> Residual CGM connection complete.")
+        # print("  MODEL_DEBUG: ---> Residual CGM connection complete.")
 
         return self.unnormalize_cgm(out)
 
