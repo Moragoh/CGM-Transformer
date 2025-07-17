@@ -104,6 +104,8 @@ while iteration <= num_iters:
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
+    print("DEBUG: Batch created.")
+
     # Move batch to device
     cgm = batch['cgm'].to(device)
     basal = batch['basal'].to(device)
@@ -115,8 +117,13 @@ while iteration <= num_iters:
     target_time = batch['target_time'].to(device)
     pred_time = batch['pred_time'].to(device)
 
+    print("DEBUG: Batch moved to GPU.")
+
+
     with torch.amp.autocast(device_type='cuda', dtype=torch.bfloat16):
+        print("DEBUG: Entering model forward pass...")
         output_cgm = model(cgm, basal, bolus, cgm_time, basal_time, bolus_time, target_time, pred_time)
+        print("DEBUG: Model forward pass complete.")
         loss = criterion(model.normalize_cgm(output_cgm), model.normalize_cgm(target_cgm))
         loss = loss / accumulation_steps
 
