@@ -108,6 +108,8 @@ train_loader = DataLoader(
     shuffle=True,  # No need for DistributedSampler
     collate_fn=collate_fn,
     drop_last=True,
+    num_workers=os.cpu_count() - 1 if os.cpu_count() > 1 else 1, # Use most CPU cores
+    pin_memory=True, # Speed up data transfer to GPU
 )
 
 val_loader = DataLoader(
@@ -116,6 +118,8 @@ val_loader = DataLoader(
     shuffle=False,  # No need for DistributedSampler
     collate_fn=collate_fn,
     drop_last=True,
+    num_workers=os.cpu_count() - 1 if os.cpu_count() > 1 else 1, # Use most CPU cores
+    pin_memory=True, # Speed up data transfer to GPU
 )
 
 # -------------------------
