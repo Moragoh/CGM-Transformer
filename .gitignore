@@ -1,2 +1,8 @@
 # venv
 venv
+
+# Dataaset
+Datasets
+
+# Models
+**/*.pth
