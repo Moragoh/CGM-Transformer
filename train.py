@@ -58,11 +58,11 @@ optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-3)
 # -------------------------
 # Datasets and Loaders
 # -------------------------
-train_dataset = CGMDataset(file="./Datasets/Train", max_len=512, pred_time=90, augment=False, max_range = 1.5)
-val_dataset = CGMDataset(file="./Datasets/Val", max_len=512, pred_time=90, augment=False,max_range = 1.5)
+train_dataset = CGMDataset(file="./Datasets/Train", max_len=512*10, pred_time=90, augment=False, max_range = 1.5)
+val_dataset = CGMDataset(file="./Datasets/Val", max_len=512*10, pred_time=90, augment=False,max_range = 1.5)
 train_loader = DataLoader(
     train_dataset,
-    batch_size=1,
+    batch_size=2,
     shuffle=True,  # No need for DistributedSampler
     collate_fn=collate_fn,
     drop_last=True,
@@ -70,7 +70,7 @@ train_loader = DataLoader(
 
 val_loader = DataLoader(
     val_dataset,
-    batch_size=1,
+    batch_size=2,
     shuffle=False,  # No need for DistributedSampler
     collate_fn=collate_fn,
     drop_last=True,
