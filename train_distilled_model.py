@@ -21,7 +21,7 @@ print(f"Using device: {device}")
 # -------------------------
 learning_rate = 1e-4
 num_iters = 50000
-log_iters = 100
+log_iters = 1000
 warmup_iters = num_iters / 10
 decay_iters = num_iters
 final_lr = learning_rate / 10
