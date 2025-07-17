@@ -194,31 +194,36 @@ class Encoding(nn.Module):
             LayerNorm(n_embd, bias=True)
         )
 
-    def forward(self, x_sorted, x_t_sorted):
+       def forward(self, x_sorted, x_t_sorted):
         """
         x: Tensor of shape (batch_size, seq_len)
         x_t: Tensor of shape (batch_size, seq_len) (relative time positions, not necessarily sorted)
         """
+        print("    ENCODING_DEBUG: ---> Entering Encoding layer.")
         batch_size, seq_len = x_sorted.shape
 
         # Pad x and x_t by repeating the first value for the first `d-1` positions
-        padded_x = torch.cat([x_sorted[:, :1].repeat(1, self.d - 1), x_sorted], dim=1)  # Shape: (batch_size, seq_len + d - 1)
-        padded_x_t = torch.cat([x_t_sorted[:, :1].repeat(1, self.d - 1), x_t_sorted], dim=1)  # Shape: (batch_size, seq_len + d - 1)
+        padded_x = torch.cat([x_sorted[:, :1].repeat(1, self.d - 1), x_sorted], dim=1)
+        padded_x_t = torch.cat([x_t_sorted[:, :1].repeat(1, self.d - 1), x_t_sorted], dim=1)
+        print("    ENCODING_DEBUG: [1/5] Padding complete.")
 
         # Create the sliding windows of size `d` for x and x_t
-        windows_x = padded_x.unfold(dimension=1, size=self.d, step=1)  # Shape: (batch_size, seq_len, d)
-        windows_x_t = padded_x_t.unfold(dimension=1, size=self.d, step=1)  # Shape: (batch_size, seq_len, d)
+        windows_x = padded_x.unfold(dimension=1, size=self.d, step=1)
+        windows_x_t = padded_x_t.unfold(dimension=1, size=self.d, step=1)
+        print("    ENCODING_DEBUG: [2/5] Unfold operation complete.")
 
         # Compute relative time differences
-        # For each window, subtract the last time value in the window from the others
-        relative_time_diff = windows_x_t - windows_x_t[:, :, -1:].expand_as(windows_x_t)  # Shape: (batch_size, seq_len, d)
-        relative_time_diff = relative_time_diff[:, :, :-1]  # Remove the self-difference (last column)
+        relative_time_diff = windows_x_t - windows_x_t[:, :, -1:].expand_as(windows_x_t)
+        relative_time_diff = relative_time_diff[:, :, :-1]
+        print("    ENCODING_DEBUG: [3/5] Relative time calculation complete.")
 
         # Concatenate x and relative time differences
-        windows = torch.cat((windows_x, relative_time_diff), dim=-1).contiguous()  # Shape: (batch_size, seq_len, d + (d - 1))
+        windows = torch.cat((windows_x, relative_time_diff), dim=-1).contiguous()
+        print("    ENCODING_DEBUG: [4/5] Concatenation complete.")
 
         # Pass the concatenated windows through the encoding layers
         out = self.encoding(windows)
+        print("    ENCODING_DEBUG: [5/5] Final MLP complete.")
         
         return out
 
