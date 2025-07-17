@@ -192,15 +192,28 @@ while iteration <= num_iters:
     
     # --- Start of Validation Block ---
     if iteration % log_iters == 0:
+        # Debug Print 1: Indicate the start of the validation block
+        print("\n--- Starting Validation Block ---")
+
         avg_train_loss = running_loss / log_iters
-        print(f"\nIter {iteration}/{num_iters} - Distillation Train Loss: {avg_train_loss:.6f}")
+        print(f"Iter {iteration}/{num_iters} - Distillation Train Loss: {avg_train_loss:.6f}")
         running_loss = 0.0
 
         # --- Validation: Evaluate the STUDENT model on its own ---
         student_model.eval()  # Set the student to evaluation mode
+        # Debug Print 2: Confirm student model is in eval mode
+        print("Student model set to eval mode.")
+
         val_losses = []
+        val_batch_counter = 0 # Initialize a counter to track validation batches
+
         with torch.no_grad():
             for val_batch in val_loader:
+                val_batch_counter += 1
+                # Debug Print 3: Show progress through validation batches
+                # This uses '\r' to overwrite the same line, making it less spammy
+                print(f"\rProcessing validation batch {val_batch_counter}/{len(val_loader)}...", end='', flush=True)
+
                 cgm = val_batch['cgm'].to(device)
                 basal = val_batch['basal'].to(device)
                 bolus = val_batch['bolus'].to(device)
@@ -212,20 +225,33 @@ while iteration <= num_iters:
                 pred_time = val_batch['pred_time'].to(device)
 
                 # Get student's output ONLY
+                # If the hang occurs here, it's during the forward pass of the model
                 output_cgm = student_model(cgm, basal, bolus, cgm_time, basal_time, bolus_time, target_time, pred_time)
+                
                 # Calculate loss against the TRUE target
                 val_loss = criterion(student_model.normalize_cgm(output_cgm), student_model.normalize_cgm(target_cgm))
                 val_losses.append(val_loss.item())
+
+        # Debug Print 4: Confirm all validation batches processed
+        print("\nFinished processing all validation batches.") # Use '\n' to move to next line after the '\r' prints
 
         avg_val_loss = sum(val_losses) / len(val_losses)
         print(f"Iter {iteration} - STUDENT Validation CGM Loss: {avg_val_loss:.6f}")
 
         # Save the STUDENT model checkpoint
+        # Debug Print 5: Indicate attempting to save the model
+        print(f"Attempting to save model at iteration {iteration}...")
         model_filename = f"{save_path}student_model_iter_{iteration}.pth"
+        # If the hang occurs here, it's during the torch.save operation
         torch.save(student_model.state_dict(), model_filename)
+        # Debug Print 6: Confirm model saved
         print(f"Model saved: {model_filename}")
 
         student_model.train() # Set the student back to training mode for the next loop
+        # Debug Print 7: Confirm student model is back in train mode
+        print("Student model set back to train mode.")
+        # Debug Print 8: Indicate the end of the validation block
+        print("--- Validation Block Finished ---")
 
 # --- End of the while loop ---
 
