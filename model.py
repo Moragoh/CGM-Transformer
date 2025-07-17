@@ -194,7 +194,7 @@ class Encoding(nn.Module):
             LayerNorm(n_embd, bias=True)
         )
 
-    def forward(self, x_sorted, x_t_sorted):
+       def forward(self, x_sorted, x_t_sorted):
         """
         x: Tensor of shape (batch_size, seq_len)
         x_t: Tensor of shape (batch_size, seq_len) (relative time positions, not necessarily sorted)

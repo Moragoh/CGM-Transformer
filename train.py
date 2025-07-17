@@ -120,14 +120,14 @@ while iteration <= num_iters:
     print("DEBUG: Batch moved to GPU.")
 
 
-    with torch.amp.autocast(device_type='cuda', dtype=torch.bfloat16):
-        print("DEBUG: Entering model forward pass...")
-        output_cgm = model(cgm, basal, bolus, cgm_time, basal_time, bolus_time, target_time, pred_time)
-        print("DEBUG: Model forward pass complete.")
-        loss = criterion(model.normalize_cgm(output_cgm), model.normalize_cgm(target_cgm))
-        loss = loss / accumulation_steps
+    # with torch.amp.autocast(device_type='cuda', dtype=torch.bfloat16):
+    print("DEBUG: Entering model forward pass...")
+    output_cgm = model(cgm, basal, bolus, cgm_time, basal_time, bolus_time, target_time, pred_time)
+    print("DEBUG: Model forward pass complete.")
+    loss = criterion(model.normalize_cgm(output_cgm), model.normalize_cgm(target_cgm))
+    loss = loss / accumulation_steps
 
-        print(f"\rIteration: {iteration}/{num_iters} | Loss: {(loss.item() * accumulation_steps):.6f}    |    ", end='', flush=True)
+    print(f"\rIteration: {iteration}/{num_iters} | Loss: {(loss.item() * accumulation_steps):.6f}    |    ", end='', flush=True)
 
     if not torch.isnan(loss).any():
         running_loss += loss.item() * accumulation_steps
