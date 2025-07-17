@@ -314,59 +314,66 @@ class CGMPredictor(nn.Module):
                 cgm_t, basal_t, bolus_t,
                 cls_t, pred_time=0):
     
+        print("  MODEL_DEBUG: ---> Start of forward pass.")
         # Normalize inputs
         inp_cgm = self.normalize_cgm(inp_cgm)
         inp_basal = self.normalize_basal(inp_basal)
         inp_bolus = self.normalize_bolus(inp_bolus)
-        
+        print("  MODEL_DEBUG: [1/8] Normalization complete.")
         
         cgm = self.cgm_embd(inp_cgm, cgm_t)
-        
+        print("  MODEL_DEBUG: [2/8] CGM embedding complete.")
+
         if inp_basal.size(1) > 0:
             basal = self.basal_embd(inp_basal, basal_t)
         else:
             basal = torch.empty(inp_basal.size(0), 0, cgm.shape[-1]).to(inp_cgm.device) 
+        print("  MODEL_DEBUG: [3/8] Basal embedding complete.")
         
         if inp_bolus.size(1) > 0:
             bolus = self.bolus_embd(inp_bolus, bolus_t)
         else:
             bolus = torch.empty(inp_bolus.size(0), 0, cgm.shape[-1]).to(inp_cgm.device) 
+        print("  MODEL_DEBUG: [4/8] Bolus embedding complete.")
         
         B, T = cls_t.shape
         cls = torch.zeros(B, T, cgm.shape[-1]).to(inp_cgm.device)
         
         ins = torch.cat([basal, bolus], dim=1)
         ins_t = torch.cat([basal_t, bolus_t], dim=1)
+        print("  MODEL_DEBUG: [5/8] Insulin data concatenated.")
         
         # Pass through blocks
-        for block in self.blocks:
+        for i, block in enumerate(self.blocks):
+            print(f"  MODEL_DEBUG: [6/8] Entering block {i+1}/{len(self.blocks)}.")
             cls, cgm, ins = block(
                 cls, cls_t, 
                 cgm, cgm_t, 
                 ins, ins_t, 
                 pred_time
             )
+            print(f"  MODEL_DEBUG: ---> Exiting block {i+1}/{len(self.blocks)}.")
             
+        print("  MODEL_DEBUG: [7/8] All transformer blocks complete.")
             
         out = self.layernorm(cls)
         out = self.head(cls)
         
-
+        # ... (rest of the forward pass) ...
+        # (The residual connection part)
         
-        ref_time = cls_t - pred_time  # (batch, n_times)
+        print("  MODEL_DEBUG: [8/8] Final layers complete.")
 
-        cgm_time_exp = cgm_t.unsqueeze(1)  # (batch, 1, n_cgm_times)
-        ref_time_exp = ref_time.unsqueeze(-1)  # (batch, n_times, 1)
-        
-        mask = (cgm_time_exp <= ref_time_exp)  # (batch, n_times, n_cgm_times)
+        ref_time = cls_t - pred_time
+        cgm_time_exp = cgm_t.unsqueeze(1)
+        ref_time_exp = ref_time.unsqueeze(-1)
+        mask = (cgm_time_exp <= ref_time_exp)
         masked_cgm_time = cgm_time_exp.masked_fill(~mask, float('-inf'))
-        idx = masked_cgm_time.argmax(dim=-1)  # (batch, n_times)
-        
-        cgm_exp = inp_cgm.unsqueeze(1).expand(-1, idx.shape[1], -1)  # (batch, n_times, n_cgm_times)
-        recent_cgm = cgm_exp.gather(2, idx.unsqueeze(-1)).squeeze(-1)  # (batch, n_times)
-        
-        
-        out = out.squeeze(-1) + recent_cgm  # (batch, n_times)
+        idx = masked_cgm_time.argmax(dim=-1)
+        cgm_exp = inp_cgm.unsqueeze(1).expand(-1, idx.shape[1], -1)
+        recent_cgm = cgm_exp.gather(2, idx.unsqueeze(-1)).squeeze(-1)
+        out = out.squeeze(-1) + recent_cgm
+        print("  MODEL_DEBUG: ---> Residual CGM connection complete.")
 
         return self.unnormalize_cgm(out)
 
