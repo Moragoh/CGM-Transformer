@@ -100,7 +100,7 @@ iteration = 1
 # -------------------------
 # Datasets and Loaders
 # -------------------------
-train_dataset = CGMDataset(file="./Datasets/Train", max_len=512*4, pred_time=90, augment=False, max_range = 1.5)
+train_dataset = CGMDataset(file="./Datasets/Train", max_len=512*2, pred_time=90, augment=False, max_range = 1.5)
 val_dataset = CGMDataset(file="./Datasets/Val", max_len=512*10, pred_time=90, augment=False,max_range = 1.5)
 train_loader = DataLoader(
     train_dataset,
