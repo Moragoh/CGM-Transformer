@@ -2,15 +2,25 @@
 # coding: utf-8
 
 # In[10]:
+import sys
+import os
 
+# Get the absolute path of the directory containing the current script
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Go up one level to the project root directory where 'model.py' is located
+project_root_dir = os.path.join(current_script_dir, '..')
+
+# Add the project root directory to sys.path
+sys.path.insert(0, project_root_dir)
 
 import torch
 import os
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from ..model import CGMPredictor
-from ..dataset import CGMDataset, collate_fn
+from model import CGMPredictor
+from dataset import CGMDataset, collate_fn
 
 # Define device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
