@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from model import CGMPredictor
 from dataset import CGMDataset, collate_fn
 from collections import OrderedDict
-
+from tqdm import tqdm
 # --- Configuration ---
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 MODEL_DIR = "results/"
