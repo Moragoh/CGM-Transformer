@@ -9,8 +9,8 @@ import os
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from model import CGMPredictor
-from dataset import CGMDataset, collate_fn
+from ..model import CGMPredictor
+from ..dataset import CGMDataset, collate_fn
 
 # Define device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
