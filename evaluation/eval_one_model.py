@@ -29,7 +29,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # In[ ]:
 
 
-test_dataset = CGMDataset(file="./Datasets/Test", max_len=512*4, pred_time=90, augment=False, max_gap=30, min_gap=2)
+test_dataset = CGMDataset(file="../Datasets/Test", max_len=512*4, pred_time=90, augment=False, max_gap=30, min_gap=2)
 
 test_loader = DataLoader(
     test_dataset,
