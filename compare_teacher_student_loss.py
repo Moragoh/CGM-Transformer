@@ -10,7 +10,7 @@ from collections import OrderedDict
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 MODEL_DIR = "results/"
 TEST_DATA_PATH = "./Datasets/Test" # The final hold-out test set
-BATCH_SIZE = 8 # Can be larger for evaluation
+BATCH_SIZE = 2 # Can be larger for evaluation
 # This must match the sequence length the models were trained on
 MAX_LEN = 512 * 10 
 
