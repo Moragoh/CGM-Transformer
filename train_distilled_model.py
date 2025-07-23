@@ -21,7 +21,7 @@ print(f"Using device: {device}")
 # -------------------------
 learning_rate = 1e-4
 num_iters = 50000
-log_iters = 1000
+log_iters = 10000
 warmup_iters = num_iters / 10
 decay_iters = num_iters
 final_lr = learning_rate / 10
@@ -108,7 +108,7 @@ train_loader = DataLoader(
     shuffle=True,  # No need for DistributedSampler
     collate_fn=collate_fn,
     drop_last=True,
-    num_workers=1 if os.cpu_count() > 7 else 1, # Use most CPU cores
+    num_workers=8 if os.cpu_count() > 7 else 1, # Use most CPU cores
     # pin_memory=True, # Speed up data transfer to GPU
 )
 
@@ -118,7 +118,7 @@ val_loader = DataLoader(
     shuffle=False,  # No need for DistributedSampler
     collate_fn=collate_fn,
     drop_last=True,
-    num_workers=1 if os.cpu_count() > 7 else 1, # Use most CPU cores
+    num_workers=8 if os.cpu_count() > 7 else 1, # Use most CPU cores
     # pin_memory=True, # Speed up data transfer to GPU
 )
 
