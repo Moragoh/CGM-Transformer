@@ -44,12 +44,20 @@ test_loader = DataLoader(
 
 
 # Assuming you have a model class defined elsewhere
+# model = CGMPredictor(
+#     n_embd=4*48,  # REDUCED: 192
+#     n_head=4,     # REDUCED
+#     n_layer=2,    # REDUCED
+#     dropout=0.3,  # Keep dropout for student training
+# )
+
 model = CGMPredictor(
-    n_embd=8*48,
-    n_head=8,
-    n_layer=3,
-    dropout=0.3,
+    n_embd=4*48,  # REDUCED: 192
+    n_head=4,     # REDUCED
+    n_layer=2,    # REDUCED
+    dropout=0.3,  # Keep dropout for student training
 )
+
 model = torch.compile(model)
 model.to(device)
 model.eval()
