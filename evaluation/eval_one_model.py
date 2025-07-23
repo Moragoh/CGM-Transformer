@@ -66,8 +66,8 @@ test_dataset.augment = False
 # In[ ]:
 
 
-iteration = 23000
-model_path = f'./Pretrained/model_iter_{iteration}.pth'
+# iteration = 
+model_path = '/home/oeste/Desktop/Jun/KingLabs/CGM-Transformer/results/student_model_iter_10000.pth' # Sorry, using absoluate path since I am remoting in from my laptopo
 model.load_state_dict(torch.load(model_path, map_location=device))
 
 
